@@ -76,6 +76,29 @@ func (bc *Blockchain) ListBlocks() {
 	}
 }
 
+func (bc *Blockchain) DisplayBlock(index int) {
+	// Check if the index is valid
+	if index < 0 || index >= len(bc.Chain) {
+		fmt.Println("Invalid block index.")
+		return
+	}
+
+	// Get the block at the specified index
+	block := bc.Chain[index]
+
+	// Display the block details
+	fmt.Printf("Block %d:\n", index)
+	fmt.Printf("Timestamp: %s\n", block.Timestamp)
+	fmt.Printf("Nonce: %d\n", block.Nonce)
+	fmt.Printf("Previous Hash: %s\n", block.PreviousHash)
+	fmt.Printf("Hash: %s\n", block.Hash)
+
+	// Display transactions as JSON
+	txs, _ := json.MarshalIndent(block.Transactions, "", "  ")
+	fmt.Printf("Transactions: %s\n", string(txs))
+	fmt.Println(strings.Repeat("-", 50))
+}
+
 // Calculate the hash for a block
 func CalculateBlockHash(block *Block) string {
 	record := strconv.Itoa(block.Index) + block.Timestamp.String() + strconv.Itoa(block.Nonce) + block.PreviousHash
