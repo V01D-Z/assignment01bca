@@ -1,115 +1,39 @@
-package assignment01bca
+package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
+
+	"github.com/V01D-Z/assignment01bca/assignment01bca"
 )
 
-// Transaction struct to hold transaction data
-type Transaction struct {
-	TransactionID              string
-	SenderBlockchainAddress    string
-	RecipientBlockchainAddress string
-	Value                      float32
-}
+func main() {
+	// Initialize the blockchain with the genesis block
+	blockchain := assignment01bca.InitializeBlockchain()
 
-// Block struct updated to hold multiple transactions and timestamp
-type Block struct {
-	Index        int
-	Timestamp    time.Time
-	Transactions []*Transaction
-	Nonce        int
-	PreviousHash string
-	Hash         string
-}
+	// Add transactions to the transaction pool
+	blockchain.AddTransaction("Alice", "Bob", 1.0)
+	blockchain.AddTransaction("Charlie", "Dave", 2.5)
 
-// Blockchain struct with chain and transaction pool
-type Blockchain struct {
-	Chain           []*Block
-	TransactionPool []*Transaction
-}
+	// Mine the first block with the current transactions
+	fmt.Println("Mining Block 1...")
+	blockchain.MineBlock()
 
-// Create a new block
-func NewBlock(nonce int, previousHash string, transactions []*Transaction) *Block {
-	block := &Block{
-		Timestamp:    time.Now(),
-		Transactions: transactions,
-		Nonce:        nonce,
-		PreviousHash: previousHash,
-	}
-	block.Hash = CalculateBlockHash(block)
-	return block
-}
+	// Add more transactions to the transaction pool
+	blockchain.AddTransaction("Eve", "Frank", 0.75)
+	blockchain.AddTransaction("George", "Harry", 3.1)
 
-// AddTransaction creates a new transaction and adds it to the pool
-func (bc *Blockchain) AddTransaction(sender string, recipient string, value float32) {
-	t := NewTransaction(sender, recipient, value)
-	bc.TransactionPool = append(bc.TransactionPool, t)
-}
+	// Mine the second block
+	fmt.Println("Mining Block 2...")
+	blockchain.MineBlock()
 
-// Create a new transaction
-func NewTransaction(sender string, recipient string, value float32) *Transaction {
-	transaction := &Transaction{
-		SenderBlockchainAddress:    sender,
-		RecipientBlockchainAddress: recipient,
-		Value:                      value,
-	}
-	transaction.TransactionID = CalculateTransactionHash(transaction)
-	return transaction
-}
+	// List all blocks in the blockchain
+	fmt.Println("\nListing All Blocks:")
+	blockchain.ListBlocks()
 
-// Calculate the hash for a block
-func CalculateBlockHash(block *Block) string {
-	record := strconv.Itoa(block.Index) + block.Timestamp.String() + strconv.Itoa(block.Nonce) + block.PreviousHash
-	hash := sha256.New()
-	hash.Write([]byte(record))
-	hashed := hash.Sum(nil)
-	return hex.EncodeToString(hashed)
-}
-
-// Calculate the hash for a transaction
-func CalculateTransactionHash(transaction *Transaction) string {
-	record := transaction.SenderBlockchainAddress + transaction.RecipientBlockchainAddress + fmt.Sprintf("%f", transaction.Value)
-	hash := sha256.New()
-	hash.Write([]byte(record))
-	hashed := hash.Sum(nil)
-	return hex.EncodeToString(hashed)
-}
-
-// Proof of Work to derive the correct nonce (difficulty level 2)
-func ProofOfWork(previousHash string, transactions []*Transaction, difficulty int) int {
-	nonce := 0
-	target := strings.Repeat("0", difficulty)
-	var hash string
-	for {
-		block := Block{Nonce: nonce, PreviousHash: previousHash, Transactions: transactions}
-		hash = CalculateBlockHash(&block)
-		if strings.HasPrefix(hash, target) {
-			break
-		}
-		nonce++
-	}
-	return nonce
-}
-
-// Method to mine a new block, derive nonce, and add block to chain
-func (bc *Blockchain) MineBlock() {
-	previousBlock := bc.Chain[len(bc.Chain)-1]
-	nonce := ProofOfWork(previousBlock.Hash, bc.TransactionPool, 2)
-	newBlock := NewBlock(nonce, previousBlock.Hash, bc.TransactionPool)
-	bc.Chain = append(bc.Chain, newBlock)
-	// Empty the transaction pool after mining
-	bc.TransactionPool = []*Transaction{}
-}
-
-// Initialize blockchain with the genesis block
-func InitializeBlockchain() *Blockchain {
-	genesisBlock := NewBlock(0, "0", []*Transaction{})
-	return &Blockchain{
-		Chain: []*Block{genesisBlock},
-	}
+	// Change a transaction in block 1 and verify the chain
+	fmt.Println("\nTampering with the blockchain...")
+	blockchain.Chain[1].Transactions[0].RecipientBlockchainAddress = "TamperedRecipient"
+	blockchain.ListBlocks()
+	valid := blockchain.VerifyChain()
+	fmt.Println("Is Blockchain valid after tampering?", valid)
 }
