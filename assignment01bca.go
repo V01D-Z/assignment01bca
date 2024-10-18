@@ -99,15 +99,29 @@ func (bc *Blockchain) VerifyChain() bool {
 	for i := 1; i < len(bc.Chain); i++ {
 		previousBlock := bc.Chain[i-1]
 		currentBlock := bc.Chain[i]
+
+		// Recalculate the block's hash to see if it matches
 		if currentBlock.Hash != CalculateBlockHash(currentBlock) {
-			fmt.Println("Blockchain has been tampered!")
+			fmt.Println("Blockchain has been tampered! Block hash mismatch detected.")
 			return false
 		}
+
+		// Check if the current block's PreviousHash matches the previous block's hash
 		if currentBlock.PreviousHash != previousBlock.Hash {
-			fmt.Println("Previous block's hash doesn't match!")
+			fmt.Println("Blockchain has been tampered! Previous block's hash doesn't match.")
 			return false
+		}
+
+		// Verify each transaction's integrity in the current block
+		for _, tx := range currentBlock.Transactions {
+			calculatedTxHash := CalculateTransactionHash(tx)
+			if tx.TransactionID != calculatedTxHash {
+				fmt.Println("Blockchain has been tampered! Transaction ID mismatch detected.")
+				return false
+			}
 		}
 	}
+
 	fmt.Println("Blockchain is valid.")
 	return true
 }
