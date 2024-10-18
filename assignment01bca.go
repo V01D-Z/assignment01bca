@@ -3,7 +3,6 @@ package assignment01bca
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,20 +11,20 @@ import (
 
 // Transaction struct to hold transaction data
 type Transaction struct {
-	TransactionID            string
-	SenderBlockchainAddress  string
+	TransactionID              string
+	SenderBlockchainAddress    string
 	RecipientBlockchainAddress string
-	Value                    float32
+	Value                      float32
 }
 
 // Block struct updated to hold multiple transactions and timestamp
 type Block struct {
-	Index         int
-	Timestamp     time.Time
-	Transactions  []*Transaction
-	Nonce         int
-	PreviousHash  string
-	Hash          string
+	Index        int
+	Timestamp    time.Time
+	Transactions []*Transaction
+	Nonce        int
+	PreviousHash string
+	Hash         string
 }
 
 // Blockchain struct with chain and transaction pool
@@ -42,7 +41,7 @@ func NewBlock(nonce int, previousHash string, transactions []*Transaction) *Bloc
 		Nonce:        nonce,
 		PreviousHash: previousHash,
 	}
-	block.Hash = CalculateHash(block)
+	block.Hash = CalculateBlockHash(block)
 	return block
 }
 
@@ -55,32 +54,16 @@ func (bc *Blockchain) AddTransaction(sender string, recipient string, value floa
 // Create a new transaction
 func NewTransaction(sender string, recipient string, value float32) *Transaction {
 	transaction := &Transaction{
-		SenderBlockchainAddress:   sender,
+		SenderBlockchainAddress:    sender,
 		RecipientBlockchainAddress: recipient,
-		Value:                     value,
+		Value:                      value,
 	}
-	transaction.TransactionID = CalculateHash(transaction)
+	transaction.TransactionID = CalculateTransactionHash(transaction)
 	return transaction
 }
 
-// List all blocks and their transactions
-func (bc *Blockchain) ListBlocks() {
-	for i, block := range bc.Chain {
-		fmt.Printf("Block %d:\n", i)
-		fmt.Printf("Timestamp: %s\n", block.Timestamp)
-		fmt.Printf("Nonce: %d\n", block.Nonce)
-		fmt.Printf("Previous Hash: %s\n", block.PreviousHash)
-		fmt.Printf("Hash: %s\n", block.Hash)
-
-		// Display transactions as JSON
-		txs, _ := json.MarshalIndent(block.Transactions, "", "  ")
-		fmt.Printf("Transactions: %s\n", string(txs))
-		fmt.Println(strings.Repeat("-", 50))
-	}
-}
-
 // Calculate the hash for a block
-func CalculateHash(block *Block) string {
+func CalculateBlockHash(block *Block) string {
 	record := strconv.Itoa(block.Index) + block.Timestamp.String() + strconv.Itoa(block.Nonce) + block.PreviousHash
 	hash := sha256.New()
 	hash.Write([]byte(record))
@@ -89,7 +72,7 @@ func CalculateHash(block *Block) string {
 }
 
 // Calculate the hash for a transaction
-func CalculateHash(transaction *Transaction) string {
+func CalculateTransactionHash(transaction *Transaction) string {
 	record := transaction.SenderBlockchainAddress + transaction.RecipientBlockchainAddress + fmt.Sprintf("%f", transaction.Value)
 	hash := sha256.New()
 	hash.Write([]byte(record))
@@ -104,7 +87,7 @@ func ProofOfWork(previousHash string, transactions []*Transaction, difficulty in
 	var hash string
 	for {
 		block := Block{Nonce: nonce, PreviousHash: previousHash, Transactions: transactions}
-		hash = CalculateHash(&block)
+		hash = CalculateBlockHash(&block)
 		if strings.HasPrefix(hash, target) {
 			break
 		}
