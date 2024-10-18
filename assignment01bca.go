@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// Transaction struct to hold transaction data
 type Transaction struct {
 	TransactionID              string
 	SenderBlockchainAddress    string
@@ -18,7 +17,6 @@ type Transaction struct {
 	Value                      float32
 }
 
-// Block struct updated to hold multiple transactions and timestamp
 type Block struct {
 	Index        int
 	Timestamp    time.Time
@@ -28,7 +26,6 @@ type Block struct {
 	Hash         string
 }
 
-// Blockchain struct with chain and transaction pool
 type Blockchain struct {
 	Chain           []*Block
 	TransactionPool []*Transaction
@@ -115,7 +112,7 @@ func (bc *Blockchain) VerifyChain() bool {
 	return true
 }
 
-// Proof of Work to derive the correct nonce (difficulty level 2)
+// Proof of Work to derive the correct nonce
 func ProofOfWork(previousHash string, transactions []*Transaction, difficulty int) int {
 	nonce := 0
 	target := strings.Repeat("0", difficulty)
