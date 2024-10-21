@@ -124,6 +124,7 @@ func (bc *Blockchain) Tamper(blockIndex int, txIndex int, newRecipient string) {
 	if blockIndex < len(bc.Chain) && txIndex < len(bc.Chain[blockIndex].Transactions) {
 		bc.Chain[blockIndex].Transactions[txIndex].RecipientBlockchainAddress = newRecipient
 		fmt.Printf("Block %d, Transaction %d has been tampered with!\n", blockIndex, txIndex)
+		bc.Chain[blockIndex].Hash = CalculateBlockHash(bc.Chain[blockIndex].Nonce, bc.Chain[blockIndex].PreviousHash, bc.Chain[blockIndex].Transactions)
 	}
 }
 
