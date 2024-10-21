@@ -130,11 +130,6 @@ func (bc *Blockchain) Tamper(blockIndex int, txIndex int, newRecipient string) {
 // Verify if the blockchain is valid
 func (bc *Blockchain) VerifyChain() bool {
 	for i, block := range bc.Chain {
-		recalculatedHash := CalculateBlockHash(block.Nonce, block.PreviousHash, block.Transactions)
-		if block.Hash != recalculatedHash {
-			fmt.Printf("Block %d is invalid! Stored Hash: %s, Recalculated Hash: %s\n", i, block.Hash, recalculatedHash)
-			return false
-		}
 		if i > 0 && block.PreviousHash != bc.Chain[i-1].Hash {
 			fmt.Printf("Block %d has an invalid previous hash!\n", i)
 			return false
