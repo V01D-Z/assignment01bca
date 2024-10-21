@@ -32,14 +32,14 @@ type Blockchain struct {
 }
 
 // Create a new block
-func NewBlock(nonce int, previousHash string, transactions []*Transaction) *Block {
+func NewBlock(nonce int, previousHash, hash string, transactions []*Transaction) *Block {
 	block := &Block{
 		Timestamp:    time.Now(),
 		Transactions: transactions,
 		Nonce:        nonce,
 		PreviousHash: previousHash,
+		Hash:         hash, // Set the hash directly from ProofOfWork
 	}
-	block.Hash = CalculateBlockHash(block)
 	return block
 }
 
@@ -67,14 +67,15 @@ func CalculateTransactionHash(transaction *Transaction) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// Calculate block hash (includes transaction hashes)
-func CalculateBlockHash(block *Block) string {
+// Calculate block hash (includes nonce and transaction hashes)
+func CalculateBlockHash(nonce int, previousHash string, transactions []*Transaction) string {
 	transactionsHash := ""
-	for _, transaction := range block.Transactions {
+	for _, transaction := range transactions {
 		transactionsHash += CalculateTransactionHash(transaction)
 	}
 
-	data := strconv.Itoa(block.Index) + block.Timestamp.String() + strconv.Itoa(block.Nonce) + block.PreviousHash + transactionsHash
+	// Include the nonce in the block hash calculation
+	data := previousHash + transactionsHash + strconv.Itoa(nonce)
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
@@ -95,7 +96,6 @@ func (bc *Blockchain) ListBlocks() {
 	}
 }
 
-// Display a specific block
 func (bc *Blockchain) DisplayBlock(index int) {
 	// Check if the index is valid
 	if index < 0 || index >= len(bc.Chain) {
@@ -124,14 +124,13 @@ func (bc *Blockchain) Tamper(blockIndex int, txIndex int, newRecipient string) {
 	if blockIndex < len(bc.Chain) && txIndex < len(bc.Chain[blockIndex].Transactions) {
 		bc.Chain[blockIndex].Transactions[txIndex].RecipientBlockchainAddress = newRecipient
 		fmt.Printf("Block %d, Transaction %d has been tampered with!\n", blockIndex, txIndex)
-		bc.Chain[blockIndex].Hash = CalculateBlockHash(bc.Chain[blockIndex])
 	}
 }
 
 // Verify if the blockchain is valid
 func (bc *Blockchain) VerifyChain() bool {
 	for i, block := range bc.Chain {
-		recalculatedHash := CalculateBlockHash(block)
+		recalculatedHash := CalculateBlockHash(block.Nonce, block.PreviousHash, block.Transactions)
 		if block.Hash != recalculatedHash {
 			fmt.Printf("Block %d is invalid! Stored Hash: %s, Recalculated Hash: %s\n", i, block.Hash, recalculatedHash)
 			return false
@@ -144,34 +143,33 @@ func (bc *Blockchain) VerifyChain() bool {
 	return true
 }
 
-// Proof of work function
-func ProofOfWork(previousHash string, transactions []*Transaction, difficulty int) int {
+// Proof of work function (returns nonce and hash)
+func ProofOfWork(previousHash string, transactions []*Transaction, difficulty int) (int, string) {
 	nonce := 0
 	target := strings.Repeat("0", difficulty)
 	var hash string
 	for {
-		block := Block{Nonce: nonce, PreviousHash: previousHash, Transactions: transactions}
-		hash = CalculateBlockHash(&block)
+		hash = CalculateBlockHash(nonce, previousHash, transactions)
 		if strings.HasPrefix(hash, target) {
 			break
 		}
 		nonce++
 	}
-	return nonce
+	return nonce, hash
 }
 
 // Mine a new block
 func (bc *Blockchain) MineBlock() {
 	previousBlock := bc.Chain[len(bc.Chain)-1]
-	nonce := ProofOfWork(previousBlock.Hash, bc.TransactionPool, 2)
-	newBlock := NewBlock(nonce, previousBlock.Hash, bc.TransactionPool)
+	nonce, hash := ProofOfWork(previousBlock.Hash, bc.TransactionPool, 2)
+	newBlock := NewBlock(nonce, previousBlock.Hash, hash, bc.TransactionPool)
 	bc.Chain = append(bc.Chain, newBlock)
 	bc.TransactionPool = []*Transaction{} // Empty the transaction pool
 }
 
 // Initialize blockchain with the genesis block
 func InitializeBlockchain() *Blockchain {
-	genesisBlock := NewBlock(0, "0", []*Transaction{})
+	genesisBlock := NewBlock(0, "0", "genesis_hash", []*Transaction{})
 	return &Blockchain{
 		Chain: []*Block{genesisBlock},
 	}
